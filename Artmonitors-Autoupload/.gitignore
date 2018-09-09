@@ -1,0 +1,16 @@
+# venv necessities and pycharm files
+bin
+include
+lib
+pyvenv.cfg
+pip-selfcheck.json
+.idea
+
+# python files
+**/__pycache__
+**/*.pyc
+
+# security/encryption-based data.
+# The GPG file can be symmetrically decrypted, and then unzipped to get the desired info
+/keys
+/keys.zip

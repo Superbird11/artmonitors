@@ -1,0 +1,11 @@
+# definitely important
+Pillow==5.2.0
+certifi==2018.8.24
+chardet==3.0.4
+pycrypto==2.6.1
+requests==2.19.1
+urllib3==1.23
+
+# probably important but I don't know exactly they're for
+idna==2.7
+setuptools==39.1.0
