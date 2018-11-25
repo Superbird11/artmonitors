@@ -46,9 +46,10 @@ img.thumbnail {
 	padding:5px;
 }
 
-img.title {
+.post img.title {
 	position: static;
 	display: inline;
+	margin: 10px 50px 10px 10px;
 }
 
 table {
@@ -211,7 +212,7 @@ p.indent {
 	position: static;
 	display: inline-block;
 
-	padding:10px;
+	padding:10px ;
 	margin:10px auto;
 	text-align: left;
 	z-index:1;
@@ -222,7 +223,7 @@ p.indent {
 
 p.puretext {
     max-width: 800px;
-    margin: 10px;
+    margin: 0px auto;
     padding: 10px;
     text-align: left;
     /*background-color: #DDDDDD;
@@ -254,7 +255,7 @@ div.puretext {
 }
 
 .post img.title {
-	width: 400px;
+	width: 500px;
 }
 
 .smallimage {

@@ -25,7 +25,7 @@ SECRET_KEY = '0%jah4bv$9)me$(x+#t64*lm0oy33o+3c#2&3k70&oowz84vvl'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', '104.248.56.35']
 
 
 # Application definition
@@ -119,14 +119,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
-STATIC_URL = '/static/'
-STATIC_ROOT = ''
-STATICFILES_DIRS = (os.path.join('static'), )
+STATIC_URL = '/static/'  # os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = BASE_DIR + "/static/" # os.path.join(BASE_DIR, 'static')
+# STATICFILES_DIRS = (os.path.join(STATIC_ROOT), )
 DJANGO_STATIC_SAVE_PREFIX = os.path.join(os.path.dirname(os.getcwd()),)
 
 # Media files for artmonitors
 
-MEDIA_ROOT = 'static/media/'
+MEDIA_ROOT = STATIC_ROOT + "media/" # os.path.join(STATIC_ROOT, 'media/')  # 'static/media/'
 MEDIA_URL = '/static/media/'
 
 

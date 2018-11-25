@@ -28,7 +28,7 @@ urlpatterns = [
 
     # admin add-collection page
     path('add_collection',                                  views.add_collection),
-    path('projects',                                        include('personal.urls')),
+    path('projects/',                                        include('personal.urls')),
 
     # old paths/redirectors
     path('about.html',                                      views.about_us,             name='old_about'),

@@ -5,6 +5,7 @@ lib
 pyvenv.cfg
 pip-selfcheck.json
 .idea
+venv
 
 # python files
 **/__pycache__

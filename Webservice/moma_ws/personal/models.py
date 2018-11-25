@@ -13,7 +13,9 @@ import os
 
 
 def generate_filename(instance, filename):
+    print(filename)
     if instance.folder and len(instance.folder) > 0:
+        print(os.path.join('personal', instance.folder, filename))
         return os.path.join('personal', instance.folder, filename)
     else:
         return 'personal/{}'.format(filename)
@@ -28,7 +30,7 @@ class PersonalFile(models.Model):
         return "{} ---> {}".format(self.name, str(self.file))
 
     """ The url for accessing this file """
-    name = models.CharField(max_length=200, primary_key=True)
+    name = models.CharField(max_length=200)
     """ A description for this project """
     description = models.TextField(blank=True, null=True)
     """ Whether this item should be displayed on the projects index """

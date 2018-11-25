@@ -12,6 +12,7 @@ from Crypto.PublicKey import RSA
 import random
 import string
 import traceback
+import os
 import sys
 
 import moma_ws.settings as django_settings
@@ -271,7 +272,7 @@ def add_collection(request):
 
 def slideshow(request):
     # TODO add functionality to choose type of slideshow
-    all_works = [[str(work.name), django_settings.MEDIA_ROOT + str(work.path), str(work.pagename),
+    all_works = [[str(work.name), os.path.join('/static/media', str(work.path)), str(work.pagename),
                   str(work.collection.abbrev)] for work in Work.objects.all()]
     context = {
         'work_list': json.dumps(all_works)

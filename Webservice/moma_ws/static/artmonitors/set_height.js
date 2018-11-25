@@ -50,7 +50,7 @@ function snapScrollToImage () {
     work_title_element.scrollIntoView(true);
 }
 
-function setSmallHeight (element) {
+function setSmallHeight (element, height) {
 	element.width = 230;
 	element.height = 230;
 }
