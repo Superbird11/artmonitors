@@ -6,7 +6,7 @@ involved in the Add Collection/Work process
 from PIL import Image
 from .models import Collection, Work
 from django.conf import settings
-from django.template import Context, Template
+from django.template import Context, Template, TemplateSyntaxError
 import os
 import numpy
 import imageio
@@ -123,6 +123,12 @@ def create_collection(data):
             errors.append("- Collection name must not be empty/null.")
         if not d['works'] or len(d['works']) == 0:
             errors.append("- Given collection has no works.")
+        try:
+            if Collection.objects.get(abbrev=d['abbrev'].lower()):
+                errors.append("- Collection Abbreviation already exists!")
+        except Collection.DoesNotExist:
+            print("New collection doesn't seem to exist yet. This is good.")
+
         work_ct = 0
         for w in d['works']:
             work_ct += 1
@@ -149,8 +155,8 @@ def create_collection(data):
 
     # arrange appropriate media URLs
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    media_root = settings.MEDIA_ROOT.lstrip('/')
-    media_url = os.path.join(base_dir, media_root)
+    media_root = settings.MEDIA_ROOT  # .lstrip('/')
+    media_url = media_root # os.path.join(base_dir, media_root)
     temp_url = os.path.join(media_url, 'temp')
     artmonitors_url = os.path.join(media_url, 'artmonitors')
     summaries_url = os.path.join(artmonitors_url, 'summaries')
@@ -214,13 +220,18 @@ def create_collection(data):
     parsed_description = re.sub(r'{{collection:(.+?):(.+?)}}',
                                 r'''<a href="{% url 'artmonitors:view_collection' coll_abbrev='\1' %}">\2</a>''',
                                 collection_description)
-    parsed_description = re.sub(r'{{work:(.+?)/(.+?):(.+?)}}',
+    parsed_description = re.sub(r'{{other:(.+?):(.+?):(.+?)}}',
                                 r'''<a href="{% url 'artmonitors:view_work' coll_abbrev='\1' work_name='\2' %}">\3</a>''',
                                 parsed_description)
     parsed_description = re.sub(r'{{work:(.+?):(.+?)}}',
                                 """<a href="{% url 'artmonitors:view_work' coll_abbrev='""" + collection_abbrev + r"""' work_name='\1' %}">\2</a>""",
                                 parsed_description)
-    parsed_desc_template = Template(parsed_description)
+
+    try:
+        parsed_desc_template = Template(parsed_description)
+    except TemplateSyntaxError as e:
+        return "Failed\n" + parsed_description + str(e)
+
     final_parsed_description = parsed_desc_template.render(Context({}))
 
     print("Finished parsing collection description")
@@ -242,19 +253,25 @@ def create_collection(data):
     for w in data['works']:
         work_name = w['name']
         work_filename = w['filename']
-        work_pagename = re.sub(r'[^\x00-\x7f]', r'', work_name.lower().replace(' ', '-').replace(',', '').replace("'", ''))
+        work_pagename = re.sub(r'[^\x00-\x7f]', r'', work_name.lower()
+                               .replace(' ', '-')
+                               .replace(',', '')
+                               .replace("'", '')
+                               .replace('.', '')
+                               )
         work_path = w['file_path']
         work_thumbnail = w['thumbnail_path']
         if w['description']:
             work_description = re.sub(r'{{collection:(.+?):(.+?)}}',
                                       r'''<a href="{% url 'artmonitors:view_collection' coll_abbrev='\1' %}">\2</a>''',
                                       w['description'])
-            work_description = re.sub(r'{{work:(.+?)/(.+?):(.+?)}}',
+            work_description = re.sub(r'{{other:(.+?):(.+?):(.+?)}}',
                                       r'''<a href="{% url 'artmonitors:view_work' coll_abbrev='\1' work_name='\2' %}">\3</a>''',
                                       work_description)
             work_description = re.sub(r'{{work:(.+?):(.+?)}}',
                                       """<a href="{% url 'artmonitors:view_work' coll_abbrev='""" + collection_abbrev + r"""' work_name='\1' %}">\2</a>""",
                                       work_description)
+
             work_desc_template = Template(work_description)
             final_work_description = work_desc_template.render(Context({}))
         else:

@@ -9,6 +9,7 @@ import datetime
 import json
 import base64
 from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 import random
 import string
 import traceback
@@ -33,9 +34,7 @@ def index(request):
     # get featured works
     featured_works = random.sample(list(Work.objects.filter(featured=True)), 5)
     # get datetime of last monday
-    last_monday = datetime.date.today()
-    while last_monday.weekday() != 0:
-        last_monday -= datetime.timedelta(days=1)
+    last_monday = django_settings.LAST_UPDATE_DATE
     # prepare context
     context = {
         'newest_coll': newest_collection,
@@ -44,6 +43,10 @@ def index(request):
         'copyright_year': datetime.datetime.now().year
     }
     return django.shortcuts.render(request, 'artmonitors/index.html', context)
+
+
+def get_last_update(request):
+    return str(django_settings.LAST_UPDATE_DATE)
 
 
 def view_all_collections(request):
@@ -67,6 +70,10 @@ def view_collection(request, coll_abbrev):
     """
     # get regular database objects
     collection = django.shortcuts.get_object_or_404(Collection, abbrev=coll_abbrev)
+    debug_collection = django.shortcuts.get_object_or_404(Collection, abbrev='macc2')
+    print(collection)
+    print(debug_collection)
+
     # get prev and next collections
     try:
         prev_collection = Collection.objects.get(id=collection.id - 0.5)
@@ -83,7 +90,13 @@ def view_collection(request, coll_abbrev):
         except Collection.DoesNotExist:
             next_collection = None
     # get works, and group them appropriately
-    works = sorted(collection.work_set.all())
+    works = sorted(Work.objects.filter(collection=collection))
+    debug_works = sorted(Work.objects.filter(collection=debug_collection))
+
+    print(works)
+    print(debug_works)
+
+
     work_groups = group_works(works, 3)
     # build context
     context = {
@@ -231,13 +244,18 @@ def add_collection(request):
     # declare decryption message for decryption
     def decrypt_message(encoded_encrypted_msg, private_key):
         # source: https://gist.github.com/syedrakib/241b68f5aeaefd7ef8e2
+        # decrypted = decryptor.decrypt(ast.literal_eval(str(encrypted)))
         decoded_encrypted_msg = base64.b64decode(encoded_encrypted_msg)
-        decoded_decrypted_msg = private_key.decrypt(decoded_encrypted_msg)
+        decryptor = PKCS1_OAEP.new(private_key)
+        decoded_decrypted_msg = decryptor.decrypt(decoded_encrypted_msg)
+        # decoded_decrypted_msg = private_key.decrypt(decoded_encrypted_msg)
         return decoded_decrypted_msg
 
     def encrypt_message(a_message, public_key):
         # source: https://gist.github.com/syedrakib/241b68f5aeaefd7ef8e2
-        encrypted_msg = public_key.encrypt(a_message, 32)[0]
+        encryptor = PKCS1_OAEP.new(public_key)
+        encrypted_msg = encryptor.encrypt(a_message)
+        # encrypted_msg = public_key.encrypt(a_message, 32)[0]
         encoded_encrypted_msg = base64.b64encode(encrypted_msg)  # base64 encoded strings are database friendly
         return encoded_encrypted_msg
 
@@ -297,6 +315,9 @@ def add_collection(request):
         st_body = {'stacktrace': invalid_reason}
         return django.http.HttpResponse(status=400, content=json.dumps(st_body))
 
+    # after successful upload, change date internally
+    django_settings.LAST_UPDATE_DATE = datetime.date.today()
+
     # generate new random_key
     random_base64 = base64.encodebytes(bytes(''.join(random.choice(string.printable) for _ in range(256)), 'utf8'))
     with open('artmonitors/keys/random_key', 'wb') as random_key_file:
@@ -310,10 +331,50 @@ def add_collection(request):
 
 
 def slideshow(request):
-    # TODO add functionality to choose type of slideshow
     all_works = [[str(work.name), os.path.join('/static/media', str(work.path)), str(work.pagename),
                   str(work.collection.abbrev)] for work in Work.objects.all()]
     context = {
         'work_list': json.dumps(all_works)
     }
     return django.shortcuts.render(request, 'artmonitors/slideshow.html', context)
+
+
+def slideshow_group(request, group_name):
+    context = {
+        'group_name': group_name
+    }
+    return django.shortcuts.render(request, 'artmonitors/slideshow_groups.html', context)
+
+
+def group(request):
+    collections = {c: group_works([w for w in Work.objects.filter(collection=c)], 3) for c in Collection.objects.all()}
+    collection_info = {str(c.id): {
+        'abbrev': str(c.abbrev),
+        'name': str(c.name),
+        'works': {
+            str(w.id): {
+                'name': str(w.name),
+                'path': str(w.path),
+                'filename': str(w.filename),
+                'pagename': str(w.pagename),
+                'thumbnail': str(w.thumbnail),
+                'selected': str(True),
+            } for w in Work.objects.filter(collection=c)
+        },
+    } for c in collections}
+    selected_collection = Collection.objects.get(id=1)
+    selected_works = collections[selected_collection]
+    # works = {c.id: group_works([w for w in Work.objects.filter(collection=c)], 3) for c in collections}
+
+    print(str(collection_info))
+
+    context = {
+        'copyright_year': str(datetime.datetime.now().year),
+        'collections': collections,
+        'collection_info': json.dumps(collection_info),
+        'selected_collection': selected_collection,
+        'selected_works': selected_works
+        # 'works': works
+    }
+    print(collections)
+    return django.shortcuts.render(request, 'artmonitors/group.html', context)

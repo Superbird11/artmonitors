@@ -9,6 +9,7 @@ import json
 from pprint import pprint
 from PIL import Image, ImageTk
 from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 
 class Application(tk.Frame):
     def __init__(self, master=None):
@@ -18,11 +19,11 @@ class Application(tk.Frame):
         self.works = []
         self.work_frames = []
         self.work_view = 0
-        self.base_url = "http://localhost:8000/add_collection"
+        self.base_url = "http://artmonitors.com/add_collection"  # "http://localhost/add_collection"
         self.create_widgets()
 
     def create_widgets(self):
-        root.geometry("1000x800")
+        root.geometry("1000x900")
 
         # create options for initializing collection
         self.url_frame = tk.LabelFrame(master=self, text="HTTP POST url")
@@ -62,7 +63,7 @@ class Application(tk.Frame):
         self.collection_description_label = tk.Label(master=self.top_middle_subframe,
                                                      text="(Collection: {{collection:oma:Some Text}}           "
                                                           "Local Work: {{work:deep-pond:Some Text}}           "
-                                                          "Other Work: {{work:oma/deep-pond:Some Text}})")
+                                                          "Other Work: {{other:oma:deep-pond:Some Text}})")
         self.collection_description_label.pack(side="top", expand=True, fill="x")
 
         self.collection_description_textarea = tk.Text(master=self.top_middle_subframe, height=15)
@@ -159,13 +160,18 @@ class Application(tk.Frame):
     def submit_collection(self):
         def decrypt_message(encoded_encrypted_msg, private_key):
             # source: https://gist.github.com/syedrakib/241b68f5aeaefd7ef8e2
+            # decrypted = decryptor.decrypt(ast.literal_eval(str(encrypted)))
             decoded_encrypted_msg = base64.b64decode(encoded_encrypted_msg)
-            decoded_decrypted_msg = private_key.decrypt(decoded_encrypted_msg)
+            decryptor = PKCS1_OAEP.new(private_key)
+            decoded_decrypted_msg = decryptor.decrypt(decoded_encrypted_msg)
+            # decoded_decrypted_msg = private_key.decrypt(decoded_encrypted_msg)
             return decoded_decrypted_msg
 
         def encrypt_message(a_message, public_key):
             # source: https://gist.github.com/syedrakib/241b68f5aeaefd7ef8e2
-            encrypted_msg = public_key.encrypt(a_message, 32)[0]
+            encryptor = PKCS1_OAEP.new(public_key)
+            encrypted_msg = encryptor.encrypt(a_message)
+            # encrypted_msg = public_key.encrypt(a_message, 32)[0]
             encoded_encrypted_msg = base64.b64encode(encrypted_msg)  # base64 encoded strings are database friendly
             return encoded_encrypted_msg
 
@@ -218,6 +224,8 @@ class Application(tk.Frame):
         response = requests.post(url=url, data=json.dumps(data), headers=headers, auth=auth)
 
         if response.status_code != 200:
+            print("Upload Failed: Error %s" % response.status_code)
+            print(response.json()['stacktrace'])
             messagebox.showerror("Upload Failed: Error %s" % response.status_code,
                                  response.json()['stacktrace'])
             return
