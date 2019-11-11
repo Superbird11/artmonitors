@@ -19,7 +19,7 @@ class Application(tk.Frame):
         self.works = []
         self.work_frames = []
         self.work_view = 0
-        self.base_url = "http://artmonitors.com/add_collection"  # "http://localhost/add_collection"
+        self.base_url = "https://artmonitors.com/add_collection"  # "http://localhost/add_collection"
         self.create_widgets()
 
     def create_widgets(self):
