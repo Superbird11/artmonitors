@@ -6,6 +6,7 @@ import base64
 import requests
 import sys
 import json
+import re
 from pprint import pprint
 from PIL import Image, ImageTk
 from Crypto.PublicKey import RSA
@@ -117,8 +118,19 @@ class Application(tk.Frame):
             work.tkname = work_name_textbox
             work_name_textbox.pack(expand=True, fill="both")
 
-            work_filename_frame = tk.LabelFrame(master=inner_frame, text="Filename")
-            work_filename_frame.pack(side="top", expand=True, fill="x")
+            filepage_frame = tk.Frame(master=inner_frame)
+            filepage_frame.pack(side="top", expand=True, fill="x")
+
+            work_pagename_frame = tk.LabelFrame(master=filepage_frame, text="Pagename")
+            work_pagename_frame.pack(side="left", expand=True, fill="x")
+
+            work_pagename_textbox = tk.Text(master=work_pagename_frame, height=1)
+            work_pagename_textbox.insert(tk.END, work.pagename)
+            work.tkpagename = work_pagename_textbox
+            work_pagename_textbox.pack(side="top", expand=True, fill="both")
+
+            work_filename_frame = tk.LabelFrame(master=filepage_frame, text="Filename")
+            work_filename_frame.pack(side="right", expand=True, fill="x")
 
             work_filename_textbox = tk.Text(master=work_filename_frame, height=1)
             work_filename_textbox.insert(tk.END, work.filename)
@@ -246,6 +258,13 @@ class Application(tk.Frame):
             self.path = path
             self.filename = path[path.rindex('/') + 1:]
             self.name = self.filename[:self.filename.rindex('.')]
+            self.pagename = re.sub(r'[^\x00-\x7f]', r'', self.name.lower()
+                                                             .replace(' ', '-')
+                                                             .replace(',', '')
+                                                             .replace("'", '')
+                                                             .replace('.', '')
+                                                             .replace('/', '')
+                                   )
             self.image = Image.open(self.path)
             self.image.thumbnail((256, 256), Image.ANTIALIAS)
             self.description = ""
@@ -254,6 +273,7 @@ class Application(tk.Frame):
             self.tkname = None
             self.tkfilename = None
             self.tkdescription = None
+            self.tkpagename = None
             self.tkimage = ImageTk.PhotoImage(self.image)
 
         def __eq__(self, other):
