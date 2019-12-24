@@ -19,7 +19,7 @@ import sys
 import smtplib, email
 
 import moma_ws.settings as django_settings
-from .models import Collection, Work, group_works
+from .models import Collection, TemplateCollection, Work, group_works
 from .add_collection_utils import create_collection, \
     preload_collection as core_preload_collection, unload_collection as core_unload_collection
 
@@ -471,43 +471,46 @@ def upload_preloaded_collection(request):
     def sendmail_email(msg):
         # http://www.yak.net/fqa/84.html
         sendmail_location = "/usr/sbin/sendmail"
-        sendmail = os.popen(f"{sendmail_location} -t", 'w')
+        sendmail = os.popen("{} -t".format(sendmail_location), 'w')
         sendmail.write(msg)
         status = sendmail.close()
-        print(f"Sent the following email with sendmail, status {status}:")
+        print("Sent the following email with sendmail, status {}:".format(status))
         print(msg)
 
     def email_about_error(errortext):
         # write email
-        sendmail_email(f"""To: curator@artmonitors.com
+        sendmail_email("""To: curator@artmonitors.com
 From: autoupload@artmonitors.com
-Subject: [UPLOAD ERROR] Upload pre-loaded collection failed ({datetime.datetime.now()})
+Subject: [UPLOAD ERROR] Upload pre-loaded collection failed ({})
 
 Hello curator,
 
 The upload for the first pre-loaded collection failed with the following error text:
 
-{errortext}
+{}
 
 Thank you,
 -Webservice.moma_ws.artmonitors
-""")
+""".format(datetime.datetime.now(), errortext))
 
     def email_about_success():
         collection_name = Collection.objects.latest("id").abbrev
-        sendmail_email(f"""To: curator@artmonitors.com
+        preloaded_collections_left = TemplateCollection.objects.count()
+        sendmail_email("""To: curator@artmonitors.com
 From: autoupload@artmonitors.com
-Subject: [UPLOAD SUCCESS] Upload pre-loaded collection {collection_name} succeeded ({datetime.datetime.now()})
+Subject: [UPLOAD SUCCESS] Upload pre-loaded collection {} succeeded ({})
 
 Hello curator,
 
-A new collection ({collection_name}) has been uploaded automatically. Please view it at
+A new collection ({}) has been uploaded automatically. Please view it at
     https://artmonitors.com
 at your convenience, just to make sure nothing went wrong.
 
+There are {} pre-loaded collections remaining.
+
 Thank you,
 -Webservice.moma_ws.artmonitors
-""")
+""".format(collection_name, datetime.datetime.now(), collection_name, preloaded_collections_left))
         # msg['Subject'] = "[UPLOAD SUCCESS] Upload pre-loaded collection failed"
         # msg['From'] = "autoupload@artmonitors.com"
         # msg['To'] = "curator@artmonitors.com"
@@ -536,6 +539,10 @@ Thank you,
         email_about_error("Failed, and the template collection was probably deleted: \n{}".format(
             traceback.format_exc()))
     else:
-        email_about_success()
+        try:
+            email_about_success()
+        except Exception as f:
+            email_about_error("Upload succeeded, but sending the success email failed: \n{}".format(
+                traceback.format_exc()))
     return response_with_new_key('artmonitors/keys/upload_preload_rsa_key.pub', 'artmonitors/keys/upload_preload_random_key')
 
